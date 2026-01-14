@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Figma, MessageSquare, LayoutList, ChevronRight, CheckCircle2, AlertCircle, Eye, Sparkles, Image, Type, MessagesSquare, Plus, X, RefreshCw, ArrowRight, Edit3, Trash2, GitCompare, FileUp, FolderOpen, Clock, Users, Search, Settings, ChevronDown, Brain, History, Link, ExternalLink, MoreHorizontal, Star, Archive, Filter, Calendar, Tag, Layers, BookOpen, Zap, Database, Shield, Copy, Download, Check, ChevronUp, Smartphone, Monitor, Bug, FlaskConical, BarChart3, Flag, Target, FileQuestion, AlertTriangle, Workflow, Play, Bookmark, Hash, Grid3X3, List, Table, CircleDot, Rocket, Microscope, CalendarClock, GitBranch } from 'lucide-react';
+import { syncNotionProjects, exportToNotion } from './utils/notionApi';
 
 export default function TestPlanGenerator() {
   const [view, setView] = useState('projects');
@@ -16,6 +17,8 @@ export default function TestPlanGenerator() {
   const [previewTab, setPreviewTab] = useState('visual');
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [syncingNotion, setSyncingNotion] = useState(false);
+  const [exporting, setExporting] = useState(false);
   
   const [newProject, setNewProject] = useState({
     name: '',
@@ -523,6 +526,54 @@ export default function TestPlanGenerator() {
       { date: '1/15', milestone: 'Bug Bash 2', focus: 'FTUX tooltips, MD integration, analytics events' }
     ]
   });
+
+  // Sync projects from Notion on mount
+  useEffect(() => {
+    const loadNotionProjects = async () => {
+      setSyncingNotion(true);
+      try {
+        const notionProjects = await syncNotionProjects();
+        if (notionProjects.length > 0) {
+          // Merge Notion projects with local sample projects
+          setProjects(prev => {
+            // Create a map of existing project IDs to avoid duplicates
+            const existingIds = new Set(prev.map(p => p.notionId || p.id));
+            const newProjects = notionProjects.filter(np => !existingIds.has(np.notionId));
+            return [...prev, ...newProjects];
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load Notion projects:', error);
+      } finally {
+        setSyncingNotion(false);
+      }
+    };
+
+    loadNotionProjects();
+  }, []);
+
+  // Export test plan to Notion
+  const handleExportToNotion = async () => {
+    setExporting(true);
+    try {
+      const result = await exportToNotion(generatedPlan);
+      alert(`✅ Successfully exported to Notion!\n\nView your test plan: ${result.notionUrl}`);
+      // Optionally refresh the projects list
+      const notionProjects = await syncNotionProjects();
+      if (notionProjects.length > 0) {
+        setProjects(prev => {
+          const existingIds = new Set(prev.map(p => p.notionId || p.id));
+          const newProjects = notionProjects.filter(np => !existingIds.has(np.notionId));
+          return [...prev, ...newProjects];
+        });
+      }
+      setShowPreviewModal(false);
+    } catch (error) {
+      alert(`❌ Failed to export to Notion:\n\n${error.message}\n\nMake sure your Notion integration is properly configured.`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const toggleSection = (sectionId) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -1054,15 +1105,28 @@ export default function TestPlanGenerator() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => setShowPreviewModal(false)}
               className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
             >
               Back to Edit
             </button>
-            <button className="px-6 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              Export to Notion
+            <button
+              onClick={handleExportToNotion}
+              disabled={exporting}
+              className="px-6 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {exporting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export to Notion
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -1132,7 +1196,7 @@ export default function TestPlanGenerator() {
               <Microscope className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-slate-900">Feature QA Hub</h1>
+              <h1 className="font-bold text-slate-900">QA Test Hub</h1>
               <p className="text-xs text-slate-500">Test planning & tracking</p>
             </div>
           </div>
