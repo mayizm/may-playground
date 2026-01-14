@@ -11,7 +11,7 @@ export default function TestPlanGenerator() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTeam, setFilterTeam] = useState('all');
-  const [projectsView, setProjectsView] = useState('your'); // 'your' or 'all'
+  const [projectsView, setProjectsView] = useState('all'); // 'your' or 'all'
   const [expandedSections, setExpandedSections] = useState({});
   const [editingTestCase, setEditingTestCase] = useState(null);
   const [previewTab, setPreviewTab] = useState('visual');
@@ -19,6 +19,12 @@ export default function TestPlanGenerator() {
   const [generating, setGenerating] = useState(false);
   const [syncingNotion, setSyncingNotion] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [requirementChange, setRequirementChange] = useState('');
+  const [uploadedScreenshot, setUploadedScreenshot] = useState(null);
+  const [generatingUpdate, setGeneratingUpdate] = useState(false);
+  const [updatedTestCases, setUpdatedTestCases] = useState(null);
+  const [updatingNotion, setUpdatingNotion] = useState(false);
   
   const [newProject, setNewProject] = useState({
     name: '',
@@ -621,6 +627,79 @@ export default function TestPlanGenerator() {
       setGenerating(false);
       setShowPreviewModal(true);
     }, 2000);
+  };
+
+  // Handle generating updated test cases based on requirement changes
+  const handleGenerateUpdate = () => {
+    if (!requirementChange && !uploadedScreenshot) {
+      alert('Please provide requirement changes or upload a screenshot');
+      return;
+    }
+
+    setGeneratingUpdate(true);
+    // Simulate AI generating updated test cases
+    setTimeout(() => {
+      // Mock updated test cases - in real implementation, this would call an AI API
+      setUpdatedTestCases({
+        changes: requirementChange,
+        newTestCases: [
+          {
+            id: 'tc-new-1',
+            scenario: 'Updated test case based on new requirements',
+            steps: '1. Follow new requirement\n2. Verify expected behavior\n3. Check edge cases',
+            ios: '',
+            android: '',
+            isNew: true,
+            isModified: false
+          }
+        ],
+        modifiedTestCases: [
+          {
+            id: 'tc-1',
+            scenario: 'Modified existing test case',
+            steps: '1. Updated step based on new requirement\n2. Verify PC drawer shows word meaning/translation',
+            ios: '✅ #14204',
+            android: '',
+            isNew: false,
+            isModified: true
+          }
+        ]
+      });
+      setGeneratingUpdate(false);
+    }, 2000);
+  };
+
+  // Handle pushing updates to Notion
+  const handlePushToNotion = async () => {
+    if (!updatedTestCases) return;
+
+    setUpdatingNotion(true);
+    try {
+      // In real implementation, this would call the Notion API to update the document
+      await exportToNotion({
+        ...generatedPlan,
+        sections: generatedPlan.sections.map(section => ({
+          ...section,
+          subsections: section.subsections?.map(sub => ({
+            ...sub,
+            testCases: [
+              ...sub.testCases,
+              ...updatedTestCases.newTestCases
+            ]
+          }))
+        }))
+      });
+
+      alert('✅ Successfully updated test plan in Notion!');
+      setShowUpdateModal(false);
+      setRequirementChange('');
+      setUploadedScreenshot(null);
+      setUpdatedTestCases(null);
+    } catch (error) {
+      alert(`❌ Failed to update Notion:\n\n${error.message}`);
+    } finally {
+      setUpdatingNotion(false);
+    }
   };
 
   // Project card component
@@ -1381,58 +1460,58 @@ export default function TestPlanGenerator() {
 
             {step === 1 && (
               <div className="space-y-4">
-                <div className="grid gap-4">
-                  <InputField 
-                    icon={FileText} 
-                    label="PRD (Product Requirements Document)" 
-                    required 
-                    field="prd" 
-                    linkField="prdLink"
-                    type="file" 
-                  />
-                  <InputField 
-                    icon={FileText} 
-                    label="Tech Spec" 
-                    required 
-                    field="techSpec" 
-                    linkField="techSpecLink"
-                    type="file" 
-                  />
-                  <InputField 
-                    icon={Figma} 
-                    label="Figma Design Link" 
-                    required 
-                    field="figma" 
-                    type="text" 
-                    placeholder="https://www.figma.com/design/..." 
-                  />
-                  <InputField 
-                    icon={MessageSquare} 
-                    label="Feature Slack Channel" 
-                    required 
-                    field="slackChannel" 
-                    type="text" 
-                    placeholder="#feature-channel" 
-                  />
-                  <InputField 
-                    icon={LayoutList} 
-                    label="Linear Project (optional)" 
-                    field="linearProject" 
-                    type="text" 
-                    placeholder="https://linear.app/team/project/..." 
-                  />
-                  <InputField 
-                    icon={Flag} 
-                    label="Feature Flag / Split" 
+                <div className="grid md:grid-cols-2 gap-4">
+                  <InputField
+                    icon={FileText}
+                    label="PRD (Product Requirements Document)"
                     required
-                    field="splitFlag" 
-                    type="text" 
-                    placeholder="feature_flag_name" 
+                    field="prd"
+                    linkField="prdLink"
+                    type="file"
+                  />
+                  <InputField
+                    icon={FileText}
+                    label="Tech Spec"
+                    required
+                    field="techSpec"
+                    linkField="techSpecLink"
+                    type="file"
+                  />
+                  <InputField
+                    icon={Figma}
+                    label="Figma Design Link"
+                    required
+                    field="figma"
+                    type="text"
+                    placeholder="https://www.figma.com/design/..."
+                  />
+                  <InputField
+                    icon={MessageSquare}
+                    label="Feature Slack Channel"
+                    required
+                    field="slackChannel"
+                    type="text"
+                    placeholder="#feature-channel"
+                  />
+                  <InputField
+                    icon={Flag}
+                    label="Feature Flag / Split"
+                    required
+                    field="splitFlag"
+                    type="text"
+                    placeholder="feature_flag_name"
+                  />
+                  <InputField
+                    icon={LayoutList}
+                    label="Linear Project (optional)"
+                    field="linearProject"
+                    type="text"
+                    placeholder="https://linear.app/team/project/..."
                   />
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <button 
+                  <button
                     onClick={() => { if (validateInputs()) setStep(2); }}
                     className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
                   >
@@ -1555,7 +1634,61 @@ export default function TestPlanGenerator() {
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
                 <DocumentsSection documents={selectedProject.documents} />
-                
+
+                {/* Update Test Plan Section */}
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-800">Update Test Plan</h3>
+                      <p className="text-xs text-slate-600">Add requirement changes to update test cases</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        Requirement Changes
+                      </label>
+                      <textarea
+                        value={requirementChange}
+                        onChange={(e) => setRequirementChange(e.target.value)}
+                        placeholder="Describe what changed in the requirements (e.g., new feature, updated flow, removed functionality)..."
+                        className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] resize-y"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        Upload Screenshot (optional)
+                      </label>
+                      <label className="flex items-center gap-2 px-3 py-2 bg-white border border-purple-200 rounded-lg cursor-pointer hover:border-purple-300 transition-colors">
+                        <Image className="w-4 h-4 text-purple-500" />
+                        <span className="text-sm text-slate-600">
+                          {uploadedScreenshot?.name || 'Upload screenshot of design or requirement'}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => setUploadedScreenshot(e.target.files?.[0] || null)}
+                        />
+                      </label>
+                    </div>
+
+                    <button
+                      onClick={() => setShowUpdateModal(true)}
+                      disabled={!requirementChange && !uploadedScreenshot}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Generate Updated Test Cases
+                    </button>
+                  </div>
+                </div>
+
                 {/* Expanded Quick Stats */}
                 <div className="bg-white rounded-xl border border-slate-200 p-5">
                   <h3 className="font-semibold text-slate-800 mb-4">Quick Stats</h3>
@@ -1723,6 +1856,130 @@ export default function TestPlanGenerator() {
 
       {/* Preview Modal */}
       {showPreviewModal && <PreviewModal />}
+
+      {/* Update Test Plan Modal */}
+      {showUpdateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-900">Updated Test Cases Preview</h2>
+                  <p className="text-xs text-slate-500">Review changes before updating Notion</p>
+                </div>
+              </div>
+              <button onClick={() => setShowUpdateModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {!updatedTestCases ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="text-center max-w-md">
+                    <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
+                      <Sparkles className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Generate Updated Test Cases</h3>
+                    <p className="text-sm text-slate-600 mb-6">
+                      Based on your requirement changes, I'll analyze and generate updated test cases.
+                    </p>
+                    <button
+                      onClick={handleGenerateUpdate}
+                      disabled={generatingUpdate}
+                      className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2 mx-auto"
+                    >
+                      {generatingUpdate ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Generate Updates
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Requirement Changes Summary */}
+                  <div className="bg-purple-50 rounded-xl border border-purple-200 p-4">
+                    <h3 className="font-semibold text-slate-800 mb-2">📝 Requirement Changes</h3>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{updatedTestCases.changes}</p>
+                  </div>
+
+                  {/* New Test Cases */}
+                  {updatedTestCases.newTestCases?.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-emerald-500 text-white rounded text-xs">NEW</span>
+                        New Test Cases ({updatedTestCases.newTestCases.length})
+                      </h3>
+                      <TestCaseTable testCases={updatedTestCases.newTestCases} sectionType="main-flow" />
+                    </div>
+                  )}
+
+                  {/* Modified Test Cases */}
+                  {updatedTestCases.modifiedTestCases?.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-amber-500 text-white rounded text-xs">MODIFIED</span>
+                        Modified Test Cases ({updatedTestCases.modifiedTestCases.length})
+                      </h3>
+                      <TestCaseTable testCases={updatedTestCases.modifiedTestCases} sectionType="main-flow" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {updatedTestCases && (
+              <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+                <div className="text-sm text-slate-600">
+                  {updatedTestCases.newTestCases?.length || 0} new + {updatedTestCases.modifiedTestCases?.length || 0} modified test cases
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setShowUpdateModal(false);
+                      setUpdatedTestCases(null);
+                    }}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handlePushToNotion}
+                    disabled={updatingNotion}
+                    className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {updatingNotion ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Updating Notion...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="w-4 h-4" />
+                        Push to Notion
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
