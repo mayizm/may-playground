@@ -9,6 +9,8 @@ export default function TestPlanGenerator() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterTeam, setFilterTeam] = useState('all');
+  const [projectsView, setProjectsView] = useState('your'); // 'your' or 'all'
   const [expandedSections, setExpandedSections] = useState({});
   const [editingTestCase, setEditingTestCase] = useState(null);
   const [previewTab, setPreviewTab] = useState('visual');
@@ -40,6 +42,7 @@ export default function TestPlanGenerator() {
       description: 'Word meanings/translations in Pronunciation Coach drawer',
       status: 'active',
       owner: { name: 'QA Engineer', avatar: 'QE' },
+      isYours: true,
       team: 'EPD - Learning Path',
       lastUpdated: '2 hours ago',
       created: 'Jan 12, 2025',
@@ -65,6 +68,7 @@ export default function TestPlanGenerator() {
       description: 'New user onboarding flow with personalization',
       status: 'active',
       owner: { name: 'Sarah Kim', avatar: 'SK' },
+      isYours: false,
       team: 'EPD - New User Experience',
       lastUpdated: '1 day ago',
       created: 'Jan 8, 2025',
@@ -90,6 +94,7 @@ export default function TestPlanGenerator() {
       description: 'Updated subscription and payment processing',
       status: 'completed',
       owner: { name: 'Mike Chen', avatar: 'MC' },
+      isYours: false,
       team: 'EPD - Growth',
       lastUpdated: '1 week ago',
       created: 'Dec 15, 2024',
@@ -115,6 +120,7 @@ export default function TestPlanGenerator() {
       description: 'Enhanced pronunciation scoring algorithm',
       status: 'draft',
       owner: { name: 'QA Engineer', avatar: 'QE' },
+      isYours: true,
       team: 'EPD - Speak Score',
       lastUpdated: '3 days ago',
       created: 'Jan 10, 2025',
@@ -1126,7 +1132,7 @@ export default function TestPlanGenerator() {
               <Microscope className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-slate-900">QA Test Hub</h1>
+              <h1 className="font-bold text-slate-900">Feature QA Hub</h1>
               <p className="text-xs text-slate-500">Test planning & tracking</p>
             </div>
           </div>
@@ -1156,15 +1162,37 @@ export default function TestPlanGenerator() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {view === 'projects' && (
           <div className="space-y-6">
+            {/* View Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex bg-white rounded-lg p-1 border border-slate-200">
+                <button
+                  onClick={() => setProjectsView('your')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${projectsView === 'your' ? 'bg-teal-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  Your Projects
+                </button>
+                <button
+                  onClick={() => setProjectsView('all')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${projectsView === 'all' ? 'bg-teal-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  All Projects
+                </button>
+              </div>
+            </div>
+
             {/* Overall Stats Dashboard */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                     <Layers className="w-4 h-4 text-slate-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-slate-800">{projects.length}</p>
+                <p className="text-2xl font-bold text-slate-800">
+                  {projectsView === 'your'
+                    ? projects.filter(p => p.isYours).length
+                    : projects.length}
+                </p>
                 <p className="text-xs text-slate-500">Total Projects</p>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -1173,7 +1201,11 @@ export default function TestPlanGenerator() {
                     <Play className="w-4 h-4 text-emerald-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-emerald-600">{projects.filter(p => p.status === 'active').length}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {projectsView === 'your'
+                    ? projects.filter(p => p.isYours && p.status === 'active').length
+                    : projects.filter(p => p.status === 'active').length}
+                </p>
                 <p className="text-xs text-slate-500">Active</p>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -1182,7 +1214,11 @@ export default function TestPlanGenerator() {
                     <FileText className="w-4 h-4 text-amber-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-amber-600">{projects.filter(p => p.status === 'draft').length}</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {projectsView === 'your'
+                    ? projects.filter(p => p.isYours && p.status === 'draft').length
+                    : projects.filter(p => p.status === 'draft').length}
+                </p>
                 <p className="text-xs text-slate-500">Draft</p>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -1191,33 +1227,21 @@ export default function TestPlanGenerator() {
                     <CheckCircle2 className="w-4 h-4 text-blue-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-blue-600">{projects.filter(p => p.status === 'completed').length}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {projectsView === 'your'
+                    ? projects.filter(p => p.isYours && p.status === 'completed').length
+                    : projects.filter(p => p.status === 'completed').length}
+                </p>
                 <p className="text-xs text-slate-500">Completed</p>
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                    <Microscope className="w-4 h-4 text-teal-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-teal-600">{projects.reduce((sum, p) => sum + (p.stats?.totalTestCases || 0), 0)}</p>
-                <p className="text-xs text-slate-500">Total Test Cases</p>
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center">
-                    <BarChart3 className="w-4 h-4 text-cyan-600" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-cyan-600">{projects.reduce((sum, p) => sum + (p.stats?.analytics?.total || 0), 0)}</p>
-                <p className="text-xs text-slate-500">Analytics Events</p>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-800">Your Projects</h2>
+              <h2 className="text-xl font-bold text-slate-800">
+                {projectsView === 'your' ? 'Your Projects' : 'All Projects'}
+              </h2>
               <div className="flex items-center gap-2">
-                <select 
+                <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm"
@@ -1227,16 +1251,31 @@ export default function TestPlanGenerator() {
                   <option value="draft">Draft</option>
                   <option value="completed">Completed</option>
                 </select>
+                <select
+                  value={filterTeam}
+                  onChange={(e) => setFilterTeam(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm"
+                >
+                  <option value="all">All Teams</option>
+                  <option value="EPD - Learning Path">EPD - Learning Path</option>
+                  <option value="EPD - New User Experience">EPD - New User Experience</option>
+                  <option value="EPD - Growth">EPD - Growth</option>
+                  <option value="EPD - Speak Score">EPD - Speak Score</option>
+                </select>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.filter(p => filterStatus === 'all' || p.status === filterStatus).map(project => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-              
+              {projects
+                .filter(p => projectsView === 'all' || p.isYours)
+                .filter(p => filterStatus === 'all' || p.status === filterStatus)
+                .filter(p => filterTeam === 'all' || p.team === filterTeam)
+                .map(project => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+
               {/* Add new project card */}
-              <button 
+              <button
                 onClick={() => setView('create')}
                 className="h-64 rounded-2xl border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-teal-50/50 transition-all flex flex-col items-center justify-center gap-3 group"
               >
