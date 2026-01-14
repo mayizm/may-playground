@@ -41,3 +41,52 @@ export async function exportToNotion(testPlan) {
     throw error;
   }
 }
+
+export async function generateTestUpdates(requirementChange, existingTestPlan, screenshot) {
+  try {
+    // Convert screenshot to base64 if provided
+    let screenshotData = null;
+    if (screenshot) {
+      screenshotData = await fileToBase64(screenshot);
+    }
+
+    const response = await fetch(`${API_BASE}/api/generate-test-updates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        requirementChange,
+        existingTestPlan,
+        screenshot: screenshotData
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to generate test updates');
+    }
+
+    const data = await response.json();
+    return data.testCases;
+  } catch (error) {
+    console.error('Error generating test updates:', error);
+    throw error;
+  }
+}
+
+// Helper function to convert file to base64
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64String = reader.result.split(',')[1]; // Remove data URL prefix
+      resolve({
+        base64Data: base64String,
+        mimeType: file.type
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

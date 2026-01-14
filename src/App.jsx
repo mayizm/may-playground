@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Figma, MessageSquare, LayoutList, ChevronRight, CheckCircle2, AlertCircle, Eye, Sparkles, Image, Type, MessagesSquare, Plus, X, RefreshCw, ArrowRight, Edit3, Trash2, GitCompare, FileUp, FolderOpen, Clock, Users, Search, Settings, ChevronDown, Brain, History, Link, ExternalLink, MoreHorizontal, Star, Archive, Filter, Calendar, Tag, Layers, BookOpen, Zap, Database, Shield, Copy, Download, Check, ChevronUp, Smartphone, Monitor, Bug, FlaskConical, BarChart3, Flag, Target, FileQuestion, AlertTriangle, Workflow, Play, Bookmark, Hash, Grid3X3, List, Table, CircleDot, Rocket, Microscope, CalendarClock, GitBranch } from 'lucide-react';
-import { syncNotionProjects, exportToNotion } from './utils/notionApi';
+import { syncNotionProjects, exportToNotion, generateTestUpdates } from './utils/notionApi';
 
 export default function TestPlanGenerator() {
   const [view, setView] = useState('projects');
@@ -630,43 +630,32 @@ export default function TestPlanGenerator() {
   };
 
   // Handle generating updated test cases based on requirement changes
-  const handleGenerateUpdate = () => {
+  const handleGenerateUpdate = async () => {
     if (!requirementChange && !uploadedScreenshot) {
       alert('Please provide requirement changes or upload a screenshot');
       return;
     }
 
     setGeneratingUpdate(true);
-    // Simulate AI generating updated test cases
-    setTimeout(() => {
-      // Mock updated test cases - in real implementation, this would call an AI API
+    try {
+      // Call Claude AI to generate real test cases
+      const testCases = await generateTestUpdates(
+        requirementChange,
+        generatedPlan, // Pass existing test plan for context
+        uploadedScreenshot
+      );
+
       setUpdatedTestCases({
         changes: requirementChange,
-        newTestCases: [
-          {
-            id: 'tc-new-1',
-            scenario: 'Updated test case based on new requirements',
-            steps: '1. Follow new requirement\n2. Verify expected behavior\n3. Check edge cases',
-            ios: '',
-            android: '',
-            isNew: true,
-            isModified: false
-          }
-        ],
-        modifiedTestCases: [
-          {
-            id: 'tc-1',
-            scenario: 'Modified existing test case',
-            steps: '1. Updated step based on new requirement\n2. Verify PC drawer shows word meaning/translation',
-            ios: '✅ #14204',
-            android: '',
-            isNew: false,
-            isModified: true
-          }
-        ]
+        newTestCases: testCases.newTestCases || [],
+        modifiedTestCases: testCases.modifiedTestCases || []
       });
+    } catch (error) {
+      console.error('Error generating test updates:', error);
+      alert(`Failed to generate test cases:\n\n${error.message}\n\nMake sure your Anthropic API key is configured in Vercel environment variables.`);
+    } finally {
       setGeneratingUpdate(false);
-    }, 2000);
+    }
   };
 
   // Handle pushing updates to Notion
